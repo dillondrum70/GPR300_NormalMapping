@@ -12,6 +12,7 @@ struct Material
 	float diffuseK = .5f;
 	float specularK = .25f;
 	float shininess = 2;
+	float normalIntensity = 1;
 
 	void ExposeImGui();
 };

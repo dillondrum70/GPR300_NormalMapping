@@ -72,7 +72,7 @@ float pointLightHeight = 5.f;
 
 const int MAX_DIRECTIONAL_LIGHTS = 8;
 DirectionalLight directionalLights[MAX_DIRECTIONAL_LIGHTS];
-int directionalLightCount = 0;
+int directionalLightCount = 1;
 float directionalLightAngle = 180.f;	//Angle towards center, 0 is down, + is towards the center, - is away from the center
 
 const int MAX_SPOTLIGHTS = 8;
@@ -94,7 +94,9 @@ bool wireFrame = false;
 
 const std::string ASSET_PATH = "./Textures/";
 const std::string TEX_FILENAME_DIAMOND_PLATE = "DiamondPlate006C_4K_Color.jpg";
+const std::string NORM_FILENAME_DIAMOND_PLATE = "DiamondPlate006C_4K_NormalGL.jpg";
 const std::string TEX_FILENAME_PAVING_STONES = "PavingStones130_4K_Color.jpg";
+const std::string NORM_FILENAME_PAVING_STONES = "PavingStones130_4K_NormalGL.jpg";
 
 int currentTextureIndex = 0;
 
@@ -164,14 +166,15 @@ int main() {
 
 	//Load in textures and add them to array
 	TextureManager texManager;
-	texManager.AddTexture((ASSET_PATH + TEX_FILENAME_DIAMOND_PLATE).c_str());
-	texManager.AddTexture((ASSET_PATH + TEX_FILENAME_PAVING_STONES).c_str());
+	texManager.AddTexture((ASSET_PATH + TEX_FILENAME_DIAMOND_PLATE).c_str(), (ASSET_PATH + NORM_FILENAME_DIAMOND_PLATE).c_str());
+	texManager.AddTexture((ASSET_PATH + TEX_FILENAME_PAVING_STONES).c_str(), (ASSET_PATH + NORM_FILENAME_PAVING_STONES).c_str());
 
 	//Set texture samplers
 	for (size_t i = 0; i < texManager.textureCount; i++)
 	{
 		//Set texture sampler to texture unit number
 		litShader.setInt("_Textures[" + std::to_string(i) + "].texSampler", i);
+		litShader.setInt("_Textures[" + std::to_string(i) + "].normSampler", (i + MAX_TEXTURES));	//Normals stored in back half of the 32 textures OpenGL supports
 	}
 
 	//Initialize shape transforms
@@ -323,6 +326,7 @@ int main() {
 		litShader.setFloat("_Mat.diffuseCoefficient", defaultMat.diffuseK);
 		litShader.setFloat("_Mat.specularCoefficient", defaultMat.specularK);
 		litShader.setFloat("_Mat.shininess", defaultMat.shininess);
+		litShader.setFloat("_Mat.normalIntensity", defaultMat.normalIntensity);
 
 		litShader.setVec3("_CamPos", camera.getPosition());
 

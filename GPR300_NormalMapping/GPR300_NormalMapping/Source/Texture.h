@@ -11,10 +11,13 @@ class Texture
 {
 private:
 	GLuint texture = 0;
+	GLuint normalMap = 16;
 
 	glm::ivec2 dimensions = glm::ivec2(0);
+	glm::ivec2 normDimensions = glm::ivec2(0);
 
-	int fileChannels = 0;
+	int texFileChannels = 0;
+	int normFileChannels = 0;
 	int desiredChannels = 0;
 
 	GLenum format = GL_RGB;
@@ -36,9 +39,11 @@ private:
 	GLint minFilter = GL_LINEAR;
 
 	unsigned char* textureData = nullptr;
+	unsigned char* normalData = nullptr;
 
 public:
 	GLenum texNumber = GL_TEXTURE0;
+	GLenum normNumber = GL_TEXTURE16;
 
 	glm::vec2 scaleFactor = glm::vec2(1);
 
@@ -48,12 +53,13 @@ public:
 
 	Texture() {}
 
-	Texture(GLenum textureNumber) : texNumber(textureNumber) {}
+	Texture(GLenum textureNumber, GLenum normalNumber) : texNumber(textureNumber), normNumber(normalNumber) {}
 
 	glm::ivec2 GetDimensions() { return dimensions; }
 	GLuint GetTexture() { return texture; }
+	GLuint GetNormalMap() { return normalMap; }
 
-	GLuint CreateTexture(const char* filePath);
+	GLuint CreateTexture(const char* texFilePath, const char* normFilePath);
 
 	void ExposeImGui();
 };

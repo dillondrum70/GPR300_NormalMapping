@@ -2,8 +2,10 @@
 
 #include "stb_image.h"
 
-GLuint Texture::CreateTexture(const char* filePath)
+GLuint Texture::CreateTexture(const char* texFilePath, const char* normFilePath)
 {
+	//Textures
+	//////////////////////////
 	glActiveTexture(texNumber);
 
 	//Create texture name
@@ -16,10 +18,39 @@ GLuint Texture::CreateTexture(const char* filePath)
 	//stbi_set_flip_vertically_on_load(true);
 
 	//Load in our texture data from the file path
-	textureData = stbi_load(filePath, &dimensions.x, &dimensions.y, &fileChannels, desiredChannels);
+	textureData = stbi_load(texFilePath, &dimensions.x, &dimensions.y, &texFileChannels, desiredChannels);
 
 	//Set texture data
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dimensions.x, dimensions.y, 0, format, type, textureData);
+
+	//Set wrapping behavior
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, verticalWrapMode);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, horizontalWrapMode);
+
+	//Set filtering behavior
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glActiveTexture(normNumber);
+
+	//Normal Map
+	//////////////////////////
+	//Create texture name
+	glGenTextures(1, &normalMap);
+
+	//Make it a 2D texture
+	glBindTexture(GL_TEXTURE_2D, normalMap);
+
+	//Use if texture is vertically flipped
+	//stbi_set_flip_vertically_on_load(true);
+
+	//Load in our texture data from the file path
+	normalData = stbi_load(normFilePath, &normDimensions.x, &normDimensions.y, &normFileChannels, desiredChannels);
+
+	//Set texture data
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, dimensions.x, dimensions.y, 0, format, type, normalData);
 
 	//Set wrapping behavior
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, verticalWrapMode);

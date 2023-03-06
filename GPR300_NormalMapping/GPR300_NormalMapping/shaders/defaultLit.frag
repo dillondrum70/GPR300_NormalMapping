@@ -5,8 +5,9 @@ in struct Vertex
 {
     vec3 Normal;
     vec3 WorldPos;
-    vec3 WorldNormal;
+    //vec3 WorldNormal;
     vec2 UV;
+    mat3 TBN;   //Tangent to worldspace change of basis transform
 }vert_out;
 
 //Uniforms from application
@@ -67,6 +68,7 @@ struct Material
     float diffuseCoefficient;
     float specularCoefficient;
     float shininess;
+    float normalIntensity;
 };
 
 uniform Material _Mat;
@@ -78,9 +80,10 @@ struct Texture
     vec2 scaleFactor;
     vec2 offset;
     sampler2D texSampler;
+    sampler2D normSampler;
 };
 
-const int MAX_TEXTURES = 32;
+const int MAX_TEXTURES = 16;
 uniform Texture _Textures[MAX_TEXTURES];
 uniform int _CurrentTexture;
 
@@ -113,7 +116,7 @@ float calculateAttenuationFactor(float dist, float constant, float linear, float
     return 1 / (constant + (linear * dist) + (quadratic * dist * dist));
 }
 
-void pointLights(inout vec3 diffuse, inout vec3 specular)
+void pointLights(inout vec3 diffuse, inout vec3 specular, vec3 normal)
 {
     for(int i = 0; i < _UsedPointLights; i++)
     {
@@ -123,7 +126,7 @@ void pointLights(inout vec3 diffuse, inout vec3 specular)
         float attenuationFactor = calculateAttenuationFactor(dist, _Attenuation.constant, _Attenuation.linear, _Attenuation.quadratic);   //Factor of how much light makes it based on distance
 
         //Diffuse Light
-        diffuse += calculateDiffuse(_Mat.diffuseCoefficient, lightDir, vert_out.WorldNormal, intensityRGB)
+        diffuse += calculateDiffuse(_Mat.diffuseCoefficient, lightDir, normal, intensityRGB)
         * attenuationFactor;
     
         //Specular Light
@@ -132,11 +135,11 @@ void pointLights(inout vec3 diffuse, inout vec3 specular)
 
         if(_Phong)    //Phong
         {
-            angle = calculatePhong(eyeDir, -lightDir, vert_out.WorldNormal);
+            angle = calculatePhong(eyeDir, -lightDir, normal);
         }
         else    //Blinn-Phong
         {
-            angle = calculateBlinnPhong(eyeDir, lightDir, vert_out.WorldNormal);
+            angle = calculateBlinnPhong(eyeDir, lightDir, normal);
         }
     
         specular += calculateSpecular(_Mat.specularCoefficient, angle, _Mat.shininess, intensityRGB)
@@ -144,7 +147,7 @@ void pointLights(inout vec3 diffuse, inout vec3 specular)
     }
 }
 
-void directionalLight(inout vec3 diffuse, inout vec3 specular)
+void directionalLight(inout vec3 diffuse, inout vec3 specular, vec3 normal)
 {
     for(int i = 0; i < _UsedDirectionalLights; i++)
     {
@@ -152,7 +155,7 @@ void directionalLight(inout vec3 diffuse, inout vec3 specular)
         vec3 lightDir = normalize(_DirectionalLight[i].dir);
     
         //Diffuse Light
-        diffuse += calculateDiffuse(_Mat.diffuseCoefficient, lightDir, vert_out.WorldNormal, intensityRGB);
+        diffuse += calculateDiffuse(_Mat.diffuseCoefficient, lightDir, normal, intensityRGB);
     
         //Specular Light
         float angle = 0;    //What dot product to put in for specular (depending on if phong or blinn-phong it changes)
@@ -160,18 +163,18 @@ void directionalLight(inout vec3 diffuse, inout vec3 specular)
 
         if(_Phong)    //Phong
         {
-            angle = calculatePhong(eyeDir, -lightDir, vert_out.WorldNormal);
+            angle = calculatePhong(eyeDir, -lightDir, normal);
         }
         else    //Blinn-Phong
         {         
-            angle = calculateBlinnPhong(eyeDir, lightDir, vert_out.WorldNormal);
+            angle = calculateBlinnPhong(eyeDir, lightDir, normal);
         }
     
         specular += calculateSpecular(_Mat.specularCoefficient, angle, _Mat.shininess, intensityRGB);
     }
 }
 
-void calculateSpotlight(inout vec3 diffuse, inout vec3 specular)
+void calculateSpotlight(inout vec3 diffuse, inout vec3 specular, vec3 normal)
 {
     for(int i = 0; i < _UsedSpotlights; i++)
     {
@@ -185,7 +188,7 @@ void calculateSpotlight(inout vec3 diffuse, inout vec3 specular)
         float angularAttentuation = pow(max(min(((fragAngle - _Spotlight[i].maxAngle) / (_Spotlight[i].minAngle - _Spotlight[i].maxAngle)), 1), 0), _Spotlight[i].falloff) * _Spotlight[i].range;
 
         //Diffuse Light
-        diffuse += calculateDiffuse(_Mat.diffuseCoefficient, lightDir, vert_out.WorldNormal, intensityRGB)
+        diffuse += calculateDiffuse(_Mat.diffuseCoefficient, lightDir, normal, intensityRGB)
         * attenuationFactor * angularAttentuation; 
 
         //Specular Light
@@ -194,11 +197,11 @@ void calculateSpotlight(inout vec3 diffuse, inout vec3 specular)
 
         if(_Phong)    //Phong
         {
-            angle = calculatePhong(eyeDir, -lightDir, vert_out.WorldNormal);
+            angle = calculatePhong(eyeDir, -lightDir, normal);
         }
         else    //Blinn-Phong
         {
-            angle = calculateBlinnPhong(eyeDir, lightDir, vert_out.WorldNormal);
+            angle = calculateBlinnPhong(eyeDir, lightDir, normal);
         }
     
         specular += calculateSpecular(_Mat.specularCoefficient, angle, _Mat.shininess, intensityRGB)
@@ -208,6 +211,14 @@ void calculateSpotlight(inout vec3 diffuse, inout vec3 specular)
 
 void main()
 {   
+    //TODO
+    //Multiply by intensity (apply to X and Y value of normal so 0 will have normal pointing straight out in worldspace normal)
+    vec2 uv = (vert_out.UV + _Textures[_CurrentTexture].offset) * _Textures[_CurrentTexture].scaleFactor;
+    vec3 normal = (texture(_Textures[_CurrentTexture].normSampler, uv).rgb * 2) - 1;
+
+    normal *= vec3(_Mat.normalIntensity, _Mat.normalIntensity, 1);
+    normal = vert_out.TBN * normal;
+
     //Ambient Light
     vec3 ambient = _Mat.ambientCoefficient * _Mat.color;
 
@@ -215,14 +226,15 @@ void main()
     vec3 specular = vec3(0);
 
     //Point Light diffuse and specular
-    pointLights(diffuse, specular);
+    pointLights(diffuse, specular, normal);
 
     //Directional light diffuse and specular
-    directionalLight(diffuse, specular);
+    directionalLight(diffuse, specular, normal);
 
     //Spotlight diffuse and specular
-    calculateSpotlight(diffuse, specular);
+    calculateSpotlight(diffuse, specular, normal);
 
-    FragColor = texture(_Textures[_CurrentTexture].texSampler, (vert_out.UV + _Textures[_CurrentTexture].offset) * _Textures[_CurrentTexture].scaleFactor) * vec4(ambient + diffuse + specular, 1.0f);
+    FragColor = texture(_Textures[_CurrentTexture].texSampler, uv) * vec4(ambient + diffuse + specular, 1.0f);
     //FragColor = vec4(vert_out.UV.x, vert_out.UV.y, 0, 1);
+    //FragColor = vec4(normal, 1);
 }

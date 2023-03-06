@@ -3,7 +3,7 @@
 
 #include "Texture.h"
 
-const int MAX_TEXTURES = 32;
+const int MAX_TEXTURES = 16;
 
 class TextureManager
 {
@@ -13,7 +13,7 @@ public:
 
 	TextureManager();
 
-	Texture AddTexture(const char* filePath);
+	Texture AddTexture(const char* texFilePath, const char* normFilePath);
 };
 
 #endif
