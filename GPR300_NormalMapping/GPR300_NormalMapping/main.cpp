@@ -66,13 +66,13 @@ float lightScale = .5f;
 
 const int MAX_POINT_LIGHTS = 8;
 PointLight pointLights[MAX_POINT_LIGHTS];
-int pointLightCount = 0;
+int pointLightCount = 1;
 float pointLightRadius = 5.f;
 float pointLightHeight = 5.f;
 
 const int MAX_DIRECTIONAL_LIGHTS = 8;
 DirectionalLight directionalLights[MAX_DIRECTIONAL_LIGHTS];
-int directionalLightCount = 1;
+int directionalLightCount = 0;
 float directionalLightAngle = 180.f;	//Angle towards center, 0 is down, + is towards the center, - is away from the center
 
 const int MAX_SPOTLIGHTS = 8;
@@ -86,7 +86,7 @@ float constantAttenuation = 1.f;
 float linearAttenuation = .35f;
 float quadraticAttenuation = .44f;
 
-bool manuallyMoveLights = false;	//If true, allows you to move point lights manually
+bool manuallyMoveLights = true;	//If true, allows you to move point lights manually
 
 bool phong = true;
 
